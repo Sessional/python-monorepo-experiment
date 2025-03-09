@@ -6,6 +6,9 @@ on:
 permissions:
   contents: read
 
+env:
+  PROJECT: app
+
 jobs:
   validate:
     name: Validate
@@ -13,13 +16,23 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+    - name: Run ruff
+      uses: dagger/dagger-for-github@8.0.0
+      with:
+        version: "latest"
+        call: -s ruff --project "$PROJECT"
+    - name: Run pyright
+      uses: dagger/dagger-for-github@8.0.0
+      with:
+        version: "latest"
+        call: -s pyright --project "$PROJECT"
     - name: Run pytest
       uses: dagger/dagger-for-github@8.0.0
       with:
         version: "latest"
-        call: -s pytest --project app
+        call: -s pytest --project "$PROJECT"
     - name: Build
       uses: dagger/dagger-for-github@8.0.0
       with:
         version: "latest"
-        call: -s fastapi-build --root-dir . --project app
+        call: -s fastapi-build --project "$PROJECT"
