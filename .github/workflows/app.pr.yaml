@@ -1,0 +1,25 @@
+name: App / Pull Request
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Run pytest
+      uses: dagger/dagger-for-github@8.0.0
+      with:
+        version: "latest"
+        call: -s pytest --project app
+    - name: Build
+      uses: dagger/dagger-for-github@8.0.0
+      with:
+        version: "latest"
+        call: -s fastapi-build --root-dir . --project app
