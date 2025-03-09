@@ -199,7 +199,7 @@ class MonorepoDagger:
         """
         Build a fastapi container for a project running with the fastapi command line
 
-        Usage: dagger call fastapi-build --root-dir . --project app up
+        Usage: dagger call fastapi-build --project app
         """
         port_to_use = "8080"
         if port is not None:
@@ -220,22 +220,29 @@ class MonorepoDagger:
         port: str | None,
         host: str | None,
         tag: str | None,
+        image_name: str | None,
+        username: str | None,
+        password: dagger.Secret | None
     ) -> str:
         """
         Build a fastapi container and publish it to a registry
         Usage:
-          dagger call fastapi-publish --root-dir . --project app --repository ghcr.io/sessional/app:latest [--tag $COMMIT_SHA]
+          dagger call fastapi-publish --project app --repository ghcr.io/sessional/app:latest [--tag $COMMIT_SHA]
         """
-
         is_dev = True if dev is True else False
         tag_to_use = tag if tag is not None else "latest"
+        image_name_to_use = image_name if not None else "python-monorepo"
         
         container: Container = await self.fastapi_build(root_dir=root_dir, project=project, port=port, host=host)
         if is_dev:
-            repository = "ttl.sh/dagger-monorepo:20m"
+            repository = f"ttl.sh/${image_name_to_use}:20m"
         else:
-            # TODO: get a real repository here
-            repository = f"localhost:5000/dagger-monorepo:{tag_to_use}"
+            container = container.with_registry_auth(
+                address="ghcr.io",
+                username=username,
+                secret=password,
+            )
+            repository = f"ghcr.io/{image_name_to_use}:{tag_to_use}".lower()
         return await container.publish(repository)
 
     @function
@@ -249,7 +256,7 @@ class MonorepoDagger:
         """
         Build a fastapi container and run it locally
         Usage:
-          dagger call fastapi-run --port 8081 --root-dir . --project app up
+          dagger call fastapi-run --project app up
         """
         port_to_use = "8080"
         if port is not None:

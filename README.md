@@ -5,6 +5,9 @@ Necessary to install:
 - [docker (or docker compatible tool)](https://www.docker.com/): the runtime for containers that are used to execute CI tasks for this project and the containers it will ship.
 - [dagger](https://docs.dagger.io/): a tool to manage and build containers in utilizing python
 
+Optional to install:
+- [act](https://nektosact.com/usage/index.html): some level of validation before pushing a workflow file
+
 Adding a new library:
 ```sh
 uv init --package --lib libs/lib3
@@ -70,4 +73,10 @@ Getting auto complete and auto imports in vscode (settings.json):
 Running tests:
 ```sh
 dagger call pytest --project app
+```
+
+Testing workflow for github:
+
+```sh
+act pull_request --container-architecture linux/amd64
 ```
