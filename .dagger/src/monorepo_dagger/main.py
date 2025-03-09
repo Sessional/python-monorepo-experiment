@@ -220,6 +220,7 @@ class MonorepoDagger:
         port: str | None,
         host: str | None,
         tag: str | None,
+        registry: str | None,
         image_name: str | None,
         username: str | None,
         password: dagger.Secret | None
@@ -227,7 +228,7 @@ class MonorepoDagger:
         """
         Build a fastapi container and publish it to a registry
         Usage:
-          dagger call fastapi-publish --project app --repository ghcr.io/sessional/app:latest [--tag $COMMIT_SHA]
+          dagger call fastapi-publish --project app --registry ghcr.io --image-name sessional/python-monorepo-experiment [--tag $COMMIT_SHA]
         """
         is_dev = True if dev is True else False
         tag_to_use = tag if tag is not None else "latest"
@@ -237,12 +238,13 @@ class MonorepoDagger:
         if is_dev:
             repository = f"ttl.sh/${image_name_to_use}:20m"
         else:
-            container = container.with_registry_auth(
-                address="ghcr.io",
-                username=username,
-                secret=password,
-            )
-            repository = f"ghcr.io/{image_name_to_use}:{tag_to_use}".lower()
+            if registry == "ghcr.io":
+                container = container.with_registry_auth(
+                    address=registry,
+                    username=username,
+                    secret=password,
+                )
+                repository = f"{registry}/{image_name_to_use}:{tag_to_use}".lower()
         return await container.publish(repository)
 
     @function

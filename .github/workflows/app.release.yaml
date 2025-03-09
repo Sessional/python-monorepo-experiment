@@ -10,6 +10,9 @@ permissions:
   packages: write
   #id-token: write #todo: coming up for pushing containers to GCP with OIDC (workload identity federation)
 
+env:
+  PROJECT: app
+
 jobs:
   validate:
     name: Validate
@@ -21,12 +24,12 @@ jobs:
       uses: dagger/dagger-for-github@8.0.0
       with:
         version: "latest"
-        call: -s pytest --project app
+        call: -s pytest --project $PROJECT
     - name: Build and push
       uses: dagger/dagger-for-github@8.0.0
       with:
         version: "latest"
-        call: -s fastapi-publish --project app --image-name $DOCKER_IMAGE_NAME --username=$DOCKER_USERNAME --password=env:DOCKER_PASSWORD
+        call: -s fastapi-publish --project $PROJECT --registry $DOCKER_REGISTRY --image-name $DOCKER_IMAGE_NAME --username=$DOCKER_USERNAME --password=env:DOCKER_PASSWORD --tag ${{ github.sha }}
       env:
         DOCKER_REGISTRY: ghcr.io
         DOCKER_IMAGE_NAME: ${{ github.repository }}
