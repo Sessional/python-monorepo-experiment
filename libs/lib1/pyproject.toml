@@ -1,0 +1,19 @@
+[project]
+name = "lib1"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Sessional", email = "Sessional@users.noreply.github.com" }
+]
+requires-python = ">=3.12.2"
+dependencies = [
+    "lib2",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+lib2 = { workspace = true }

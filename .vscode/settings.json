@@ -1,0 +1,14 @@
+{
+    "python.autoComplete.extraPaths": [
+        "./libs/lib1/src",
+        "./libs/lib2/src"
+    ],
+    "python.analysis.extraPaths": [
+        "./libs/lib1/src",
+        "./libs/lib2/src"
+    ],
+    "[markdown]": {
+        "editor.wordWrap": "bounded",
+        "editor.wordWrapColumn": 80
+    }
+}

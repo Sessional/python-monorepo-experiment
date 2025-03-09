@@ -1,0 +1,23 @@
+[project]
+name = "app"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Sessional", email = "Sessional@users.noreply.github.com" }
+]
+requires-python = ">=3.12.2"
+dependencies = [
+    "fastapi[standard]>=0.115.11",
+    "lib1",
+]
+
+[project.scripts]
+app = "app:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+lib1 = { workspace = true }

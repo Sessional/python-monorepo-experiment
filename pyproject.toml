@@ -1,0 +1,26 @@
+[project]
+name = "python-uv-monorepo-2"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12.2"
+dependencies = []
+
+[dependency-groups]
+dagger = [
+    "monorepo-dagger",
+]
+dev = [
+    "pyright>=1.1.396",
+    "pytest>=8.3.5",
+    "ruff>=0.9.10",
+]
+
+[tool.uv.workspace]
+members = ["projects/app", "libs/lib1", "libs/lib2", "libs/lib3"]
+
+[tool.uv.sources]
+monorepo-dagger = { path = ".dagger" }
+
+[project.entry-points."dagger.mod"]
+main_object = 'monorepo_dagger:MonorepoDagger'
