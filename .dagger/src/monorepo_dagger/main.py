@@ -277,6 +277,7 @@ Ruff:
         return f"{'/'.join(item for item in [registry, namespace, repository] if item is not None)}:{tag}"
 
     def attach_registry_auth(
+            self,
             container: Container,
             registry: str,
             username: str | None,
@@ -358,7 +359,7 @@ Ruff:
 
         #return await container.publish(f"ttl.sh/python-monorepo-slim:20m")
 
-        container = self.attach_registry_auth(registry=registry, username=username, password=password)
+        container = self.attach_registry_auth(container=container, registry=registry, username=username, password=password)
 
         namespace, repository = git_repository.split("/")
         repository = self.build_container_destination(registry=registry, namespace=namespace, repository=repository, tag=tag)
@@ -439,7 +440,7 @@ Ruff:
 
         #return await container.publish(f"ttl.sh/python-monorepo-distroless:20m")
 
-        container = self.attach_registry_auth(registry=registry, username=username, password=password)
+        container = self.attach_registry_auth(container=container, registry=registry, username=username, password=password)
 
         namespace, repository = git_repository.split("/")
         repository = self.build_container_destination(registry=registry, namespace=namespace, repository=repository, tag=tag)
