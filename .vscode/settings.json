@@ -1,14 +1,22 @@
 {
     "python.autoComplete.extraPaths": [
+        // need a new entry for each library that is going to be imported or auto completed
         "./libs/lib1/src",
         "./libs/lib2/src"
     ],
     "python.analysis.extraPaths": [
+        // need a new entry for each library that is going to be imported or auto completed
         "./libs/lib1/src",
         "./libs/lib2/src"
     ],
     "[markdown]": {
         "editor.wordWrap": "bounded",
         "editor.wordWrapColumn": 80
-    }
+    },
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestArgs": [
+         // need a new entry for each package that is going to have tests
+        "projects/app"
+    ]
 }

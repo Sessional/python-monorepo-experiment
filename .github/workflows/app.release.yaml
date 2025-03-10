@@ -14,24 +14,24 @@ env:
   PROJECT: app
 
 jobs:
-  validate:
-    name: Validate
+  release:
+    name: Release
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-    - name: Run pytest
+    - name: Verify
       uses: dagger/dagger-for-github@8.0.0
       with:
         version: "latest"
-        call: -s pytest --project $PROJECT
+        call: -s verify --project "$PROJECT"
     - name: Build and push
       uses: dagger/dagger-for-github@8.0.0
       with:
         version: "latest"
-        call: -s fastapi-publish --project $PROJECT --registry $DOCKER_REGISTRY --image-name $DOCKER_IMAGE_NAME --username=$DOCKER_USERNAME --password=env:DOCKER_PASSWORD --tag ${{ github.sha }}
+        call: -s fastapi-distroless-publish --project $PROJECT --registry $DOCKER_REGISTRY --git-repository $GITHUB_REPOSITORY --username=$DOCKER_USERNAME --password=env:DOCKER_PASSWORD --tag ${{ github.sha }}
       env:
         DOCKER_REGISTRY: ghcr.io
-        DOCKER_IMAGE_NAME: ${{ github.repository }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
         DOCKER_USERNAME: ${{ github.actor }}
         DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
