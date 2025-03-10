@@ -269,6 +269,7 @@ Ruff:
         return await container.with_exec(["ruff", "check"]).stdout()
 
     def build_container_destination(
+            self,
             registry: str,
             namespace: str | None,
             repository: str,
