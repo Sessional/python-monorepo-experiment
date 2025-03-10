@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     { name = "Sessional", email = "Sessional@users.noreply.github.com" }
 ]
-requires-python = ">=3.12.2"
+requires-python = ">=3.11"
 dependencies = [
     "fastapi[standard]>=0.115.11",
     "lib1",
@@ -21,3 +21,9 @@ build-backend = "hatchling.build"
 
 [tool.uv.sources]
 lib1 = { workspace = true }
+
+[tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib",
+]
+pythonpath = "src"
