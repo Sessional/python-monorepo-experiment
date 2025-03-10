@@ -275,7 +275,7 @@ Ruff:
             repository: str,
             tag: str,
     ):
-        return f"{'/'.join(item for item in [registry, namespace, repository] if item is not None)}:{tag}"
+        return f"{'/'.join(item for item in [registry, namespace, repository] if item is not None)}:{tag}".lower()
 
     def attach_registry_auth(
             self,
