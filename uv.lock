@@ -40,12 +40,14 @@ version = "0.1.0"
 source = { editable = "projects/app" }
 dependencies = [
     { name = "fastapi", extra = ["standard"] },
+    { name = "jinja2" },
     { name = "lib1" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "fastapi", extras = ["standard"], specifier = ">=0.115.11" },
+    { name = "jinja2", specifier = ">=3.1.6" },
     { name = "lib1", editable = "libs/lib1" },
 ]
 
