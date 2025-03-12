@@ -25,7 +25,13 @@ IGNORE = Ignore(
         ".dagger/sdk",
         "**/.pytest_cache",
         "**/.ruff_cache",
-        ".envrc"
+        ".envrc",
+    ]
+)
+
+SHIPPING_IGNORES = Ignore(
+    IGNORE.patterns + [
+        "**/tests"
     ]
 )
 
@@ -67,7 +73,7 @@ class MonorepoDagger:
             root_dir.file("uv.lock"), project
         )
 
-        container = self.copy_source_code(container, root_dir, project_sources_map)
+        container = await self.copy_source_code(container, root_dir, IGNORE, project_sources_map)
 
         container = container.with_exec(["sleep", str(debug_sleep)])
 
@@ -144,10 +150,11 @@ class MonorepoDagger:
 
         return project_sources_map
 
-    def copy_source_code(
+    async def copy_source_code(
         self,
         container: Container,
         root_dir: RootDir,
+        ignores: Ignore,
         project_sources_map: dict[str, str],
         target_dir: str = "src",
     ) -> Container:
@@ -155,6 +162,7 @@ class MonorepoDagger:
             container = container.with_directory(
                 f"/{target_dir}/{project_source_path}",
                 root_dir.directory(project_source_path),
+                exclude=ignores.patterns
             )
 
         return container
@@ -175,61 +183,6 @@ class MonorepoDagger:
         )
 
         return container
-
-    @function
-    async def fastapi_build(
-        self,
-        root_dir: RootDir,
-        project: str,
-        port: str | None,
-        host: str | None,
-    ) -> Container:
-        """
-        Build a fastapi container for a project running with the fastapi command line
-
-        Usage: dagger call fastapi-build --project app
-        """
-        port_to_use = "8080"
-        if port is not None:
-            port_to_use = port
-        host_to_use = "0.0.0.0"
-        if host is not None:
-            host_to_use = host
-        container: Container = await self.build_project(root_dir=root_dir, project=project, debug_sleep=0)
-        # TODO: uvicorn with workers here might be ideal.
-        return container.with_entrypoint(["fastapi", "run", f"src/{project}", "--port", port_to_use, "--host", host_to_use])
-
-    @function
-    async def fastapi_publish(
-        self,
-        root_dir: RootDir,
-        project: str,
-        dev: bool | None,
-        tag: str | None,
-        registry: str | None,
-        image_name: str | None,
-        username: str | None,
-        password: dagger.Secret | None
-    ) -> str:
-        """
-        Build a fastapi container and publish it to a registry
-        Usage:
-          dagger call fastapi-publish --project app --registry ghcr.io --image-name sessional/python-monorepo-experiment [--tag $COMMIT_SHA]
-        """
-        is_dev = True if dev is True else False
-        tag_to_use = tag if tag is not None else "latest"
-        
-        container: Container = await self.fastapi_build(root_dir=root_dir, project=project)
-        if is_dev:
-            repository = self.build_container_destination(registry="ttl.sh", repository="python-monorepo", tag="20m")
-        else:
-            container = self.attach_registry_auth(
-                registry=registry,
-                username=username,
-                password=password
-            )
-            repository = self.build_container_destination(registry=registry, namespace=image_name.split("/")[0], repository=image_name.split("/")[1], tag=tag_to_use)
-        return await container.publish(repository)
 
     @function
     async def verify(self, root_dir: RootDir, project: str) -> str:
@@ -299,7 +252,7 @@ Ruff:
         project: str,
         port: str | None = "8080",
         host: str | None = "0.0.0.0",
-        path_to_code: str | None = "/code"
+        path_to_code: str | None = "code"
         ) -> Container:
         uv_container = (
             dag.container()
@@ -326,17 +279,18 @@ Ruff:
             .with_env_variable("UV_COMPILE_BYTECODE", "1")
             .with_env_variable("UV_LINK_MODE", "copy")
             .with_env_variable("UV_FROZEN", "1")
-            .with_directory(path_to_code, code_directory)
-            .with_workdir(path_to_code)
+            .with_mounted_cache("/root/.cache/uv", dag.cache_volume("python-311"))
+            .with_directory(f"{path_to_code}", code_directory)
+            .with_workdir(f"{path_to_code}")
             .with_exec([uv, "sync", "--no-install-workspace", "--package", project])
         )
         
-        builder = self.copy_source_code(container=builder, root_dir=root_dir, project_sources_map=sources, target_dir=path_to_code)
+        builder = await self.copy_source_code(container=builder, root_dir=root_dir, project_sources_map=sources, target_dir=path_to_code, ignores=SHIPPING_IGNORES)
         builder = builder.with_exec([uv, "sync", "--inexact", "--no-editable", "--package", project])
 
         builder = (
             builder
-            .with_workdir(f"{path_to_code}/projects/{project}")
+            .with_workdir(f"/{path_to_code}/projects/{project}")
             .with_entrypoint(["python", "-m", "fastapi", "run", f"src/{project}", "--port", port, "--host", host])
             .with_exposed_port(int(port))
         )
@@ -387,25 +341,25 @@ Ruff:
         port: str | None = "8080",
         host: str | None = "0.0.0.0",
         ) -> Container:
-        path_to_code = "/code"
+        path_to_code = "code"
         path_to_site_packages = "/usr/local/lib/python3.11/site-packages"
 
         builder = await self.fastapi_slim_build(root_dir=root_dir, project=project, path_to_code=path_to_code, port=port, host=host)
 
-        new_code_directory = builder.directory(path_to_code)
+        new_code_directory = builder.directory(f"/{path_to_code}")
         new_site_packages = builder.directory(path_to_site_packages)
 
         runtime_container = (
             dag.container()
             .from_("gcr.io/distroless/python3-debian12")
-            .with_directory(path_to_code, new_code_directory)
+            .with_directory(f"/{path_to_code}", new_code_directory)
             .with_directory(path_to_site_packages, new_site_packages)
         )
 
         runtime_container = (
             runtime_container
             .with_env_variable("PYTHONPATH", path_to_site_packages)
-            .with_workdir(f"{path_to_code}/projects/{project}")
+            .with_workdir(f"/{path_to_code}/projects/{project}")
             .with_entrypoint(["python", "-m", "fastapi", "run", f"src/{project}", "--port", port, "--host", host])
             .with_exposed_port(int(port))
         )
@@ -430,20 +384,30 @@ Ruff:
         root_dir: RootDir,
         project: str,
         registry: str,
-        git_repository: str,
+        image: str | None,
+        git_repository: str | None,
         username: str | None,
         password: dagger.Secret | None,
         tag: str,
         port: str | None = "8080",
         host: str | None = "0.0.0.0",
         ) -> str:
+        """
+        :param git_repository: typically ${{ github.repository }}, or `sessional/python-monorepo-experiment`
+        :param image: used when passing to somewhere that does not have a namespace tier (ttl.sh)
+        :param username: for authenticating to a registry (GHCR)
+        :param password: for authenticating to a registry (GHCR)
+        """
         container = await self.fastapi_distroless_build(root_dir=root_dir, project=project, port=port, host=host)
 
-        #return await container.publish(f"ttl.sh/python-monorepo-distroless:20m")
+        if username is not None and password is not None:
+            container = self.attach_registry_auth(container=container, registry=registry, username=username, password=password)
 
-        container = self.attach_registry_auth(container=container, registry=registry, username=username, password=password)
-
-        namespace, repository = git_repository.split("/")
+        if git_repository is not None:
+            namespace, repository = git_repository.split("/")
+        else:
+            namespace = None
+            repository = image
         repository = self.build_container_destination(registry=registry, namespace=namespace, repository=repository, tag=tag)
 
         return await container.publish(repository)

@@ -2,16 +2,27 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug: App",
+            "name": "Debug Project",
             "type": "debugpy",
             "request": "launch",
             "module": "uvicorn",
             "args": [
-                "src.app:app",
+                "src.${input:project-name}:app",
                 "--reload"
             ],
             "jinja": true,
-            "cwd": "${workspaceFolder}/projects/app"
+            "cwd": "${workspaceFolder}/projects/${input:project-name}"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "project-name",
+            "type": "pickString",
+            "options": [
+                "app"
+            ],
+            "description": "The project inside the `projects` folder to attach the debugger.",
+            "default": "app"
         }
     ]
 }
